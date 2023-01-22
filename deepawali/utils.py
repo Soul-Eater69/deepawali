@@ -20,9 +20,130 @@ from collections import Counter
 from pytrends.request import TrendReq
 import pandas as pd 
 import numpy as np
-import time
+import time,json
+import itertools
 from datetime import datetime, timedelta
+from nltk.probability import FreqDist
+import nltk
 
+
+def makeRequest(query,country, lang):
+    url = "http://suggestqueries.google.com/complete/search"
+    params = {
+        "client":"firefox",
+        "hl":country,
+        "q":query,
+        "lr": lang
+    }
+    headers = {'User-agent':'Mozilla/5.0', 'Accept-Language': lang}
+    response = requests.get(url, params=params, headers=headers)
+    
+    if response.status_code == 200:
+        searches = json.loads(response.content.decode('utf-8'))[1]
+        return searches
+    else:
+        return 'ERR'
+
+def merge_keywords(top_keywords, top_keywords_1):
+    merged = []
+    filtered_keywords = [(k, v) for k, v in top_keywords.items() if v > 1]
+    filtered_keywords_1 = [(' '.join(k), v) for k, v in top_keywords_1.items() if v > 1]
+    merged.extend(filtered_keywords)
+    merged.extend(filtered_keywords_1)
+    merged = sorted(merged, key = lambda x: x[1],reverse=True)
+    
+    return merged
+
+
+def getGoogleSuggests(keywords,country,language):
+    
+    charList = 'abcdefghijklmnopqrstuvwxyz0123456789'
+    data = {}
+    for keyword in keywords:
+        time.sleep(1)
+        queryList = [keyword+' '+char for char in charList]
+        suggestions = []
+        for query in queryList:
+            suggestion = makeRequest(query,country,language)
+            if suggestion!='ERR':
+                suggestions.append(suggestion)
+        suggestions = [x for sublist in suggestions for x in sublist]
+        
+        if "" in suggestions:
+            suggestions.remove('')
+        text = [x.replace(keyword,'') for x in suggestions]
+
+        words = preprocess_text(' '.join(text))
+        top_keywords = compute_keyword_densities(words, 1)
+        top_keywords_1 = compute_keyword_densities(words, 2)
+        res = merge_keywords(top_keywords,top_keywords_1)
+
+        data[keyword+'_top'] = res
+        data[keyword] = suggestions
+    
+    return data
+
+
+
+def getProductSuggestions(brands,country,language):
+    characters = list("abcdefghijklmnopqrstuvwxyz0123456789")
+    data = {}
+
+    for brand in brands:
+        time.sleep(1)
+        keywords = []
+        for char in characters:
+            url = f"https://suggestqueries.google.com/complete/search?client=firefox&q={brand}+review+{char}&hl={country}&lr={language}"
+            response = requests.get(url)
+            suggestions = response.json()[1]
+            keywords.extend(suggestions)
+
+            keywords = list(set(keywords))
+            pattern = re.compile(r"review")
+            cleaned_keywords = [re.sub(pattern, "", keyword) for keyword in keywords]
+
+        text = [x.replace(brand,'') for x in cleaned_keywords]
+
+        words = preprocess_text(' '.join(text))
+        top_keywords = compute_keyword_densities(words, 1)
+        top_keywords_1 = compute_keyword_densities(words, 2)
+        res = merge_keywords(top_keywords,top_keywords_1)
+
+        data[brand+'_top'] = res
+        data[brand] = cleaned_keywords
+    return data
+
+
+def getYoutubeSuggestions(brands,country,language):
+    characters = list("abcdefghijklmnopqrstuvwxyz0123456789")
+    data = {}
+
+    for brand in brands:
+        time.sleep(1)
+        keywords = []
+        for char in characters:
+            url = f'https://clients1.google.com/complete/search?client=youtube&gs_ri=youtube&ds=yt&q={brand}+{char}&hl={country}&lr={language}'
+            response = requests.get(url).text
+            suggestions = re.findall(r'\"([^\"]+)\"', response)
+            keywords.extend(suggestions)
+
+            keywords = list(set(keywords))
+            keywords = [keyword for keyword in keywords if brand in keyword]
+            keywords = [keyword for keyword in keywords if keyword.startswith(brand)]
+
+            if " " in keywords:
+                keywords.remove(' ')
+
+        text = [x.replace(brand,'') for x in keywords]
+
+        words = preprocess_text(' '.join(text))
+        top_keywords = compute_keyword_densities(words, 1)
+        top_keywords_1 = compute_keyword_densities(words, 2)
+        res = merge_keywords(top_keywords,top_keywords_1)
+
+        data[brand+'_top'] = res
+        data[brand] = keywords
+    return data
 
 
 def historic_trends(keyword,country):
