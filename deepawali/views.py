@@ -1,8 +1,54 @@
 from deepawali import app
 from flask_restful import Resource
 from flask import request,jsonify
-from deepawali.utils import get_domain_data, get_keyword_suggestions,related_keywords,get_page_content,get_keywords_from_text,get_site_links,get_response_code,get_keywords_of_an_url,historic_trends
+from deepawali.utils import get_domain_data, get_keyword_suggestions,related_keywords,get_page_content,get_keywords_from_text,get_site_links,get_response_code,get_keywords_of_an_url,historic_trends,getGoogleSuggests,getProductSuggestions,getYoutubeSuggestions
 
+
+class GetGoogleSuggests(Resource):
+    def post(self):
+        try:
+            data = request.get_json()
+            keywords = data['keywords']
+            country = data['country']
+            language = data['language']
+
+            google_data = getGoogleSuggests(keywords,country,language)
+
+            return jsonify({'data':google_data})  
+             
+        except Exception as e:
+            return jsonify(error=str(e))
+
+class GetProductSuggests(Resource):
+    def post(self):
+        try:
+            data = request.get_json()
+            keywords = data['keywords']
+            country = data['country']
+            language = data['language']
+
+            google_data = getProductSuggestions(keywords,country,language)
+
+            return jsonify({'data':google_data})  
+             
+        except Exception as e:
+            return jsonify(error=str(e))
+
+
+class GetYoutubeSuggests(Resource):
+    def post(self):
+        try:
+            data = request.get_json()
+            keywords = data['keywords']
+            country = data['country']
+            language = data['language']
+
+            google_data = getYoutubeSuggestions(keywords,country,language)
+
+            return jsonify({'data':google_data})  
+             
+        except Exception as e:
+            return jsonify(error=str(e))
 
 class GetHistoricTrends(Resource):
     def post(self):
