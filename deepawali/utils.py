@@ -14,7 +14,6 @@ import re
 from multiprocessing.pool import ThreadPool
 from urllib.parse import urlparse
 from tldextract import extract
-from seoanalyzer import analyze
 from nltk import ngrams
 from nltk.corpus import stopwords
 from collections import Counter
