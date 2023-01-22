@@ -3,9 +3,7 @@ from deepawali import views
 from deepawali.views import GetDomainData, GetKeywordSuggestions, GetKeywordsFromText, GetRelatedKeywords, GetKeywordsFromURL,GetBrokenLinks,GetResponseCode, GetHistoricTrends
 from flask_restful import Api
 from flask_cors import CORS
-import nltk
 
-nltk.download("stopwords")
 
 
 api = Api(app)
