@@ -203,7 +203,7 @@ def historic_trends(keywords, country):
             
             data = yearly_data 
             for index, row in data.iterrows():
-                complete_data[keyword]['daily_data'][row.date.strftime('%Y-%m-%d')] = row[keyword]
+                complete_data[keyword]['daily_data'][index.strftime('%Y-%m-%d')] = row[keyword]
             
         return complete_data
 
