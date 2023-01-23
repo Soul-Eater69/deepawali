@@ -200,8 +200,9 @@ def historic_trends(keywords, country):
             yearly_difference = str(round(yearly_data['percentage_difference'].iloc[-1] ))
 
             complete_data[keyword] = {'three':three_years_ago_str,'current':current_date_str,'today_interest':str(yearly_data[keyword].iloc[-1]),'daily_data' : {}, 'week_difference':week_difference,'monthly_difference':monthly_difference,'yearly_difference':yearly_difference,'keyword':keyword }
-            
+            print(yearly_data)
             data = yearly_data 
+            data.index = pd.to_datetime(data.index)
             for index, row in data.iterrows():
                 complete_data[keyword]['daily_data'][index.strftime('%Y-%m-%d')] = row[keyword]
             
