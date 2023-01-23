@@ -146,72 +146,71 @@ def getYoutubeSuggestions(brands,country,language):
     return data
 
 
-def historic_trends(keyword,country):
+def historic_trends(keywords, country):
     try:
         trend = TrendReq()
-        keyword = [f"{keyword}"]        
         current_date = datetime.now()
         three_years_ago = current_date - timedelta(days=365*3)
         current_date_str = current_date.strftime("%Y-%m-%d")
         three_years_ago_str = three_years_ago.strftime("%Y-%m-%d") 
+        
+        complete_data = {}
 
-        trend.build_payload(kw_list=keyword,timeframe='{} {}'.format(three_years_ago_str,current_date_str),geo=country)    
-        yearly_data = trend.interest_over_time()
+        trend.build_payload(kw_list=keywords,timeframe='{} {}'.format(three_years_ago_str,current_date_str),geo=country)    
+        data = trend.interest_over_time()
         
         time.sleep(1)
-        trend.build_payload(kw_list=keyword,timeframe='today 3-m',geo=country) 
+        trend.build_payload(kw_list=keywords,timeframe='today 3-m',geo=country) 
         monthly_data = trend.interest_over_time()
 
         if(len(monthly_data.columns)==0):
             raise Exception("No Data Found")
-        
-        weekly_data = monthly_data
 
-        weekly_data[keyword[0]] = weekly_data[keyword[0]].replace(0, np.nan)
-        weekly_data[keyword[0]] = weekly_data[keyword[0]].fillna(method='bfill')
+        for keyword in keywords:
+            yearly_data = data[data[keyword] != 0]
+            weekly_data = monthly_data[monthly_data[keyword] != 0]
+            # The rest of the logic for processing the data 
+            weekly_data[keyword] = weekly_data[keyword].replace(0, np.nan)
+            weekly_data[keyword] = weekly_data[keyword].fillna(method='bfill')
 
-        monthly_data[keyword[0]] = monthly_data[keyword[0]].replace(0, np.nan)
-        monthly_data[keyword[0]] = monthly_data[keyword[0]].fillna(method='bfill')
+            monthly_data[keyword] = monthly_data[keyword].replace(0, np.nan)
+            monthly_data[keyword] = monthly_data[keyword].fillna(method='bfill')
 
-        yearly_data[keyword[0]] = yearly_data[keyword[0]].replace(0, np.nan)
-        yearly_data[keyword[0]] = yearly_data[keyword[0]].fillna(method='bfill')
+            yearly_data[keyword] = yearly_data[keyword].replace(0, np.nan)
+            yearly_data[keyword] = yearly_data[keyword].fillna(method='bfill')
 
-        data = yearly_data 
+            monthly_data['month'] = monthly_data.index.month
+            weekly_data['week'] =  weekly_data.index.week
+            yearly_data['year'] =  yearly_data.index.year
 
-        monthly_data['month'] = monthly_data.index.month
-        weekly_data['week'] =  weekly_data.index.week
-        yearly_data['year'] =  yearly_data.index.year
-        
-        weekly_data = weekly_data.groupby(by='week').sum()
-        monthly_data = monthly_data.groupby(by='month').sum()
-        yearly_data = yearly_data.groupby(by='year').median()
-        
-        weekly_data['percentage_difference'] = (weekly_data[keyword[0]]-weekly_data[keyword[0]].shift(1))/weekly_data[keyword[0]].shift(1)*100
-        monthly_data['percentage_difference'] = (monthly_data[keyword[0]]-monthly_data[keyword[0]].shift(1))/monthly_data[keyword[0]].shift(1)*100
-        yearly_data['percentage_difference'] = (yearly_data[keyword[0]]-yearly_data[keyword[0]].shift(1))/yearly_data[keyword[0]].shift(1)*100
-        
-        weekly_data = weekly_data.reset_index()
-        monthly_data = monthly_data.reset_index()
-        yearly_data = yearly_data.reset_index()
-        
-        week_difference = str(round(weekly_data['percentage_difference'].iloc[-1]))
-        monthly_difference = str(round(monthly_data['percentage_difference'].iloc[-1]))
-        yearly_difference = str(round(yearly_data['percentage_difference'].iloc[-1] ))
+            weekly_data = weekly_data.groupby(by='week').sum()
+            monthly_data = monthly_data.groupby(by='month').sum()
+            yearly_data = yearly_data.groupby(by='year').median()
 
-        complete_data = {'three':three_years_ago_str,'current':current_date_str,'today_interest':str(data[keyword[0]].iloc[-1]),'daily_data' : {}, 'week_difference':week_difference,'monthly_difference':monthly_difference,'yearly_difference':yearly_difference,'keyword':keyword }
-        
-        
-        data = data.reset_index()
-        
-        for index, row in data.iterrows():
-            complete_data['daily_data'][row.date.strftime('%Y-%m-%d')] = round(row[keyword[0]])
-        
+            weekly_data['percentage_difference'] = (weekly_data[keyword]-weekly_data[keyword].shift(1))/weekly_data[keyword].shift(1)*100
+            monthly_data['percentage_difference'] = (monthly_data[keyword]-monthly_data[keyword].shift(1))/monthly_data[keyword].shift(1)*100
+            yearly_data['percentage_difference'] = (yearly_data[keyword]-yearly_data[keyword].shift(1))/yearly_data[keyword].shift(1)*100
+
+            weekly_data = weekly_data.reset_index()
+            monthly_data = monthly_data.reset_index()
+            yearly_data = yearly_data.reset_index()
+
+            week_difference = str(round(weekly_data['percentage_difference'].iloc[-1]))
+            monthly_difference = str(round(monthly_data['percentage_difference'].iloc[-1]))
+            yearly_difference = str(round(yearly_data['percentage_difference'].iloc[-1] ))
+
+            complete_data[keyword] = {'three':three_years_ago_str,'current':current_date_str,'today_interest':str(yearly_data[keyword].iloc[-1]),'daily_data' : {}, 'week_difference':week_difference,'monthly_difference':monthly_difference,'yearly_difference':yearly_difference,'keyword':keyword }
+            
+            data = yearly_data 
+            for index, row in data.iterrows():
+                complete_data[keyword]['daily_data'][row.date.strftime('%Y-%m-%d')] = row[keyword]
+            
         return complete_data
+
 
     except Exception as e:
         print(e)
         return []
-
 
 
 def fetch_html(url):
