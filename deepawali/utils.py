@@ -147,9 +147,16 @@ def getYoutubeSuggestions(brands,country,language):
 
 
 
+
 def historic_trends(keyword,country):
     try:
-        trend = TrendReq(tz=360, retries=5)
+        requests_args = {
+            'headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+            }
+        }
+
+        trend = TrendReq(requests_args=requests_args)
         keyword = [f"{keyword}"]        
         current_date = datetime.now()
         three_years_ago = current_date - timedelta(days=365*3)
@@ -166,6 +173,7 @@ def historic_trends(keyword,country):
         if(len(monthly_data.columns)==0):
             raise Exception("No Data Found")
         
+        print(monthly_data)
         weekly_data = monthly_data
 
         weekly_data[keyword[0]] = weekly_data[keyword[0]].replace(0, np.nan)
@@ -213,6 +221,7 @@ def historic_trends(keyword,country):
         print(e)
         return []
  
+
 
 def fetch_html(url):
     # Fetch the HTML content of the given URL
@@ -657,4 +666,4 @@ def get_keyword_suggestions(keyword, country):
     
     
 
-    
+   
